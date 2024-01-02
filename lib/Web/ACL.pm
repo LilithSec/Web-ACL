@@ -305,7 +305,7 @@ sub new {
 		} ## end if ( !defined( $opts{acl}{'nonexistent'} ))
 
 		$self->{acl} = $opts{acl};
-	} elsif ( defined( $opts{acl} ) && ref( $opts{acl} ) eq 'HASH' ) {
+	} elsif ( defined( $opts{acl} ) && ref( $opts{acl} ) ne 'HASH' ) {
 		$self->{perror}      = 1;
 		$self->{error}       = 1;
 		$self->{errorString} = '$opts{acl} is not ref HASH, but "' . ref( $opts{acl} ) . '"';
