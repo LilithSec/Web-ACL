@@ -19,6 +19,7 @@ my %WriteMakefileArgs = (
 	PREREQ_PM => {
 		'Net::Subnet'   => '0',
 		'Error::Helper' => '0',
+		'Data::Dumper'  => '0',
 	},
 	dist       => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
 	clean      => { FILES    => 'Web-ACL-*' },
