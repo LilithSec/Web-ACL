@@ -48,7 +48,7 @@ our $VERSION = '0.0.2';
             derpderp=>{
 				ip_auth       => 0,
 				slug_auth     => 1,
-				require_ip    => 1,
+				require_ip    => 0,
 				require_slug  => 0,
 				final         => 1,
 				slugs         => ['derp'],
@@ -171,24 +171,36 @@ sub new {
 			'undef' => {
 				ip_auth       => 0,
 				slug_auth     => 0,
+				ua_ath        => 0,
+				path_auth     => 0,
 				require_ip    => 0,
 				require_slug  => 0,
+				require_ua    => 0,
+				require_path  => 0,
 				final         => 0,
 				slugs         => [],
 				slugs_regex   => [],
 				allow_subnets => [],
 				deny_subnets  => [],
+				ua_regex      => [],
+				paths_regex   => [],
 			},
 			'nonexistent' => {
 				ip_auth       => 0,
 				slug_auth     => 0,
+				ua_auth       => 0,
+				path_auth     => 0,
 				require_ip    => 0,
 				require_slug  => 0,
+				require_ua    => 0,
+				require_path  => 0,
 				final         => 0,
 				slugs         => [],
 				slugs_regex   => [],
 				allow_subnets => [],
 				deny_subnets  => [],
+				ua_regex      => [],
+				paths_regex   => [],
 			},
 		},
 	};
@@ -198,20 +210,15 @@ sub new {
 
 		my @acl_keys = keys( %{ $opts{acl} } );
 		foreach my $acl (@acl_keys) {
-			if ( !defined( $opts{acl}{$acl}{ip_auth} ) ) {
-				$opts{acl}{$acl}{ip_auth} = 0;
-			}
-
-			if ( !defined( $opts{acl}{$acl}{slug_auth} ) ) {
-				$opts{acl}{$acl}{slug_auth} = 0;
-			}
-
-			if ( !defined( $opts{acl}{$acl}{require_ip} ) ) {
-				$opts{acl}{$acl}{require_ip} = 0;
-			}
-
-			if ( !defined( $opts{acl}{$acl}{require_slug} ) ) {
-				$opts{acl}{$acl}{require_slug} = 0;
+			# check boolean items and define if undef
+			my @keys_that_are_boolean = (
+				'ip_auth',   'require_ip',   'slug_auth', 'require_slug',
+				'path_auth', 'require_path', 'ua_auth',   'require_ua',
+			);
+			foreach my $boolean_key (@keys_that_are_boolean) {
+				if ( !defined( $opts{acl}{$acl}{$boolean_key} ) ) {
+					$opts{acl}{$acl}{$boolean_key} = 0;
+				}
 			}
 
 			if ( !defined( $opts{acl}{$acl}{final} ) && ( $acl eq 'undef' || $acl eq 'nonexistent' ) ) {
@@ -220,60 +227,25 @@ sub new {
 				$opts{acl}{$acl}{final} = 1;
 			}
 
-			if ( !defined( $opts{acl}{$acl}{slugs} ) ) {
-				$opts{acl}{$acl}{slugs} = [];
-			} elsif ( ref( $opts{acl}{$acl}{slugs} ) ne 'ARRAY' ) {
-				$self->{perror} = 1;
-				$self->{error}  = 2;
-				$self->{errorString}
-					= '$opts{acl}{acl}{slugs} is not ref ARRAY, but "' . ref( $opts{acl}{$acl}{slugs} ) . '"';
-				$self->warn;
-				return;
-			}
-
-			if ( !defined( $opts{acl}{$acl}{slugs_regex} ) ) {
-				$opts{acl}{$acl}{slugs_regex} = [];
-			} elsif ( ref( $opts{acl}{$acl}{slugs_regex} ) ne 'ARRAY' ) {
-				$self->{perror}      = 1;
-				$self->{error}       = 2;
-				$self->{errorString} = '$opts{acl}{acl}{slugs_regex} is not ref ARRAY, but "'
-					. ref( $opts{acl}{$acl}{slugs_regex} ) . '"';
-				$self->warn;
-				return;
-			}
-
-			if ( !defined( $opts{acl}{$acl}{slugs_regex} ) ) {
-				$opts{acl}{$acl}{deny_subnets} = [];
-			} elsif ( ref( $opts{acl}{$acl}{slugs_regex} ) ne 'ARRAY' ) {
-				$self->{perror}      = 1;
-				$self->{error}       = 2;
-				$self->{errorString} = '$opts{acl}{acl}{slugs_regex} is not ref ARRAY, but "'
-					. ref( $opts{acl}{$acl}{slugs_regex} ) . '"';
-				$self->warn;
-				return;
-			}
-
-			if ( !defined( $opts{acl}{$acl}{allow_subnets} ) ) {
-				$opts{acl}{$acl}{allow_subnets} = [];
-			} elsif ( ref( $opts{acl}{$acl}{allow_subnets} ) ne 'ARRAY' ) {
-				$self->{perror}      = 1;
-				$self->{error}       = 2;
-				$self->{errorString} = '$opts{acl}{acl}{allow_subnets} is not ref ARRAY, but "'
-					. ref( $opts{acl}{$acl}{allow_subnets} ) . '"';
-				$self->warn;
-				return;
-			}
-
-			if ( !defined( $opts{acl}{$acl}{deny_subnets} ) ) {
-				$opts{acl}{$acl}{deny_subnets} = [];
-			} elsif ( ref( $opts{acl}{$acl}{deny_subnets} ) ne 'ARRAY' ) {
-				$self->{perror}      = 1;
-				$self->{error}       = 2;
-				$self->{errorString} = '$opts{acl}{acl}{deny_subnets} is not ref ARRAY, but "'
-					. ref( $opts{acl}{$acl}{deny_subnets} ) . '"';
-				$self->warn;
-				return;
-			}
+			# check array items and error if they are not a array
+			# if undef, create a empty array
+			my @keys_that_are_arrays
+				= ( 'slugs', 'ua_regex', 'paths_regex', 'slugs_regex', 'allow_subnets', 'deny_subnets', );
+			foreach my $array_key (@keys_that_are_arrays) {
+				if ( !defined( $opts{acl}{$acl}{$array_key} ) ) {
+					$opts{acl}{$acl}{$array_key} = [];
+				} elsif ( ref( $opts{acl}{$acl}{$array_key} ) ne 'ARRAY' ) {
+					$self->{perror} = 1;
+					$self->{error}  = 2;
+					$self->{errorString}
+						= '$opts{acl}{acl}{'
+						. $array_key
+						. '} is not ref ARRAY, but "'
+						. ref( $opts{acl}{$acl}{$array_key} ) . '"';
+					$self->warn;
+					return;
+				} ## end elsif ( ref( $opts{acl}{$acl}{$array_key} ) ne...)
+			} ## end foreach my $array_key (@keys_that_are_arrays)
 		} ## end foreach my $acl (@acl_keys)
 
 		if ( !defined( $opts{acl}{'undef'} ) ) {
