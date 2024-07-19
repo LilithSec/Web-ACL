@@ -229,8 +229,8 @@ sub new {
 		foreach my $acl (@acl_keys) {
 			# check boolean items and define if undef
 			my @keys_that_are_boolean = (
-				'ip_auth',   'require_ip',   'slug_auth', 'require_slug',
-				'path_auth', 'require_path', 'ua_auth',   'require_ua', 'final',
+				'ip_auth', 'require_ip', 'slug_auth', 'require_slug', 'path_auth', 'require_path',
+				'ua_auth', 'require_ua', 'final',
 			);
 			foreach my $boolean_key (@keys_that_are_boolean) {
 				if ( !defined( $opts{acl}{$acl}{$boolean_key} ) ) {
@@ -510,7 +510,7 @@ sub check {
 	}
 
 	# process path info
-	if ( defined($ua) && $self->{acl}{ $opts{apikey} }{path_auth} ) {
+	if ( defined($path) && $self->{acl}{ $opts{apikey} }{path_auth} ) {
 		# process allows if we have any
 		if ( defined( $self->{acl}{ $opts{apikey} }{path_regex_allow}[0] ) ) {
 			my $path_matched = 0;
